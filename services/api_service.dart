@@ -63,6 +63,13 @@ class ApiService {
     );
   }
 
+  static Future<Map<String, dynamic>> requestPasswordReset(String login) async {
+    return _post(
+      '/request-reset',
+      <String, dynamic>{'login': login.trim()},
+    );
+  }
+
   static Future<List<dynamic>> getSkills() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String token = prefs.getString('token') ?? '';

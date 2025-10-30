@@ -3,6 +3,7 @@
 import 'screens/add_skill_page.dart';
 import 'screens/home_page.dart';
 import 'screens/login_page.dart';
+import 'screens/forgot_password_page.dart';
 import 'screens/message_page.dart';
 import 'screens/signup_page.dart';
 
@@ -22,6 +23,7 @@ class SkillSwapApp extends StatelessWidget {
       initialRoute: '/login',
       routes: {
         '/login': (BuildContext context) => const LoginPage(),
+        '/forgotpassword': (BuildContext context) => const ForgotPasswordPage(),
         '/signup': (BuildContext context) => const SignupPage(),
         '/home': (BuildContext context) => const HomePage(),
         '/addskill': (BuildContext context) => const AddSkillPage(),
