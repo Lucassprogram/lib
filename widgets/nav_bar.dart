@@ -22,6 +22,7 @@ class _NavBarState extends State<NavBar> {
     super.initState();
     _pages = const <Widget>[
       HomePage(),
+      _OffersPlaceHolder(),
       MessagePage(),
       _SettingsPlaceholder(),
     ];
@@ -68,12 +69,16 @@ class _NavBarState extends State<NavBar> {
                 text: 'Home',
               ),
               GButton(
+                icon: Icons.local_offer,
+                text: 'Offers',
+              ),
+              GButton(
                 icon: Icons.message,
                 text: 'Messages',
               ),
               GButton(
                 icon: Icons.settings,
-                text: 'Settings',
+                text: 'Profile',
               ),
             ],
           ),
@@ -92,7 +97,23 @@ class _SettingsPlaceholder extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.all(24),
         child: Text(
-          'Settings coming soon!',
+          'Profile coming soon!',
+          style: TextStyle(fontSize: 18, color: Colors.grey),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+class _OffersPlaceHolder extends StatelessWidget {
+  const _OffersPlaceHolder({super.key});
+
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Offers coming soon!',
           style: TextStyle(fontSize: 18, color: Colors.grey),
           textAlign: TextAlign.center,
         ),

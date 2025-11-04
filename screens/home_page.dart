@@ -273,7 +273,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SkillSwap (API draft)'),
+        title: const Text('SkillSwap'),
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.refresh),
