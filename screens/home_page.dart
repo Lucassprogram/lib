@@ -1,9 +1,11 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/skill_chip.dart';
 
 /// Simple data model the real home page can map onto the existing UI widgets.
 class RecommendedUser {
@@ -161,7 +163,9 @@ class _HomePageState extends State<HomePage> {
         continue;
       }
       final Object? idValue = raw['UserID'];
-      final int? userId = idValue is int ? idValue : int.tryParse(idValue?.toString() ?? '');
+      final int? userId = idValue is int
+          ? idValue
+          : int.tryParse(idValue?.toString() ?? '');
       if (userId == null) {
         continue;
       }
@@ -173,14 +177,19 @@ class _HomePageState extends State<HomePage> {
     return result;
   }
 
-  List<RecommendedUser> _mapMatchResults(List<dynamic> payload, int currentUser) {
+  List<RecommendedUser> _mapMatchResults(
+    List<dynamic> payload,
+    int currentUser,
+  ) {
     final List<RecommendedUser> users = <RecommendedUser>[];
     for (final dynamic raw in payload) {
       if (raw is! Map<String, dynamic>) {
         continue;
       }
       final Object? idValue = raw['_id'];
-      final int? userId = idValue is int ? idValue : int.tryParse(idValue?.toString() ?? '');
+      final int? userId = idValue is int
+          ? idValue
+          : int.tryParse(idValue?.toString() ?? '');
       if (userId == null || userId == currentUser) {
         continue;
       }
@@ -200,7 +209,10 @@ class _HomePageState extends State<HomePage> {
     return users;
   }
 
-  List<RecommendedUser> _mapBrowseResults(List<dynamic> payload, int currentUser) {
+  List<RecommendedUser> _mapBrowseResults(
+    List<dynamic> payload,
+    int currentUser,
+  ) {
     final Map<int, List<String>> offers = <int, List<String>>{};
     final Map<int, List<String>> needs = <int, List<String>>{};
 
@@ -209,7 +221,9 @@ class _HomePageState extends State<HomePage> {
         continue;
       }
       final Object? idValue = raw['UserId'] ?? raw['UserID'];
-      final int? userId = idValue is int ? idValue : int.tryParse(idValue?.toString() ?? '');
+      final int? userId = idValue is int
+          ? idValue
+          : int.tryParse(idValue?.toString() ?? '');
       if (userId == null || userId == currentUser) {
         continue;
       }
@@ -252,7 +266,9 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    final List<RecommendedUser> filtered = _allUsers.where((RecommendedUser user) {
+    final List<RecommendedUser> filtered = _allUsers.where((
+      RecommendedUser user,
+    ) {
       final bool matchesName = user.displayName.toLowerCase().contains(trimmed);
       final bool matchesOffer = user.offerSkills.any(
         (String skill) => skill.toLowerCase().contains(trimmed),
@@ -271,76 +287,119 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SkillSwap'),
+        toolbarHeight: 72,
+        title: Row(
+          children: <Widget>[
+            Container(
+              height: 44,
+              width: 44,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.dashboard_customize_outlined,
+                color: AppColors.primary,
+                size: 26,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'SkillSwap',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  'Dashboard',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
         actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _isLoading ? null : () => _loadRecommendations(),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: TextButton.icon(
+              onPressed: _isLoading ? null : () => _loadRecommendations(),
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Refresh'),
+            ),
           ),
         ],
       ),
-      body: FutureBuilder<void>(
-        future: _initialLoad,
-        builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
-          if (_isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: SafeArea(
+        child: FutureBuilder<void>(
+          future: _initialLoad,
+          builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+            if (_isLoading) {
+              return const _DashboardLoading();
+            }
 
-          if (_errorMessage != null) {
-            return _ErrorState(message: _errorMessage!, onRetry: _loadRecommendations);
-          }
+            if (_errorMessage != null) {
+              return _ErrorState(
+                message: _errorMessage!,
+                onRetry: _loadRecommendations,
+              );
+            }
 
-          if (_visibleUsers.isEmpty) {
-            final String headline = _source == RecommendationSource.matches
-                ? 'No matches yet'
-                : 'No skills to browse yet';
-            return _EmptyState(
-              headline: headline,
-              onRefresh: _loadRecommendations,
+            if (_visibleUsers.isEmpty) {
+              final String headline = _source == RecommendationSource.matches
+                  ? 'No matches yet'
+                  : 'No skills to browse yet';
+              return _EmptyState(
+                headline: headline,
+                onRefresh: _loadRecommendations,
+              );
+            }
+
+            final List<Widget> sections = <Widget>[
+              _DashboardIntro(source: _source),
+              _SearchPanel(
+                controller: _searchController,
+                onClear: () {
+                  _searchController.clear();
+                  _applyFilter('');
+                },
+              ),
+            ];
+
+            if (_source == RecommendationSource.browse) {
+              sections.add(const _BrowseBanner());
+            }
+
+            sections.addAll(
+              _visibleUsers.map(
+                (RecommendedUser user) => _RecommendationCard(user: user),
+              ),
             );
-          }
 
-          return Column(
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search),
-                    labelText: 'Search for people or skills',
-                  ),
-                ),
+            return RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: _loadRecommendations,
+              child: ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                itemBuilder: (BuildContext context, int index) =>
+                    sections[index],
+                separatorBuilder: (BuildContext context, int index) =>
+                    const SizedBox(height: 16),
+                itemCount: sections.length,
               ),
-              if (_source == RecommendationSource.browse)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Chip(
-                      label: Text('Showing browse results (no personal matches yet)'),
-                    ),
-                  ),
-                ),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _loadRecommendations,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                    itemCount: _visibleUsers.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (BuildContext context, int index) {
-                      final RecommendedUser user = _visibleUsers[index];
-                      return _RecommendationCard(user: user);
-                    },
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -354,55 +413,304 @@ class _RecommendationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    final List<String> offerSkills = user.offerSkills.take(3).toList();
+    final List<String> needSkills = user.needSkills.take(3).toList();
+    final int totalDisplayed = offerSkills.length + needSkills.length;
+    final int totalAvailable = user.offerSkills.length + user.needSkills.length;
+    final int remaining = totalAvailable - totalDisplayed;
+
+    final SkillChipType primaryType = user.offerSkills.isNotEmpty
+        ? SkillChipType.offer
+        : (user.needSkills.isNotEmpty
+              ? SkillChipType.need
+              : SkillChipType.neutral);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.border),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Row(
               children: <Widget>[
                 CircleAvatar(
-                  radius: 24,
-                  child: Text(user.displayName.isNotEmpty ? user.displayName[0] : '?'),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
+                  radius: 26,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.12),
                   child: Text(
-                    user.displayName,
-                    style: theme.textTheme.titleMedium,
+                    user.displayName.isNotEmpty ? user.displayName[0] : '?',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-                TextButton(
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        user.displayName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (user.secondaryTags.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: user.secondaryTags
+                              .map(
+                                (String tag) => SkillChip(
+                                  label: tag,
+                                  type: SkillChipType.neutral,
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                OutlinedButton.icon(
                   onPressed: () {},
-                  child: const Text('Message'),
+                  icon: const Icon(Icons.send, size: 18),
+                  label: const Text('Message'),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              user.primarySkill,
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            const SizedBox(height: 16),
+            SkillChip(
+              label: user.primarySkill,
+              type: primaryType,
+              icon: primaryType == SkillChipType.offer
+                  ? Icons.local_fire_department_outlined
+                  : primaryType == SkillChipType.need
+                  ? Icons.lightbulb_outline
+                  : Icons.star_border,
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: <Widget>[
-                ...user.offerSkills.skip(1).take(3).map(
-                  (String skill) => Chip(label: Text('Offers $skill')),
-                ),
-                ...user.needSkills.take(3).map(
-                  (String skill) => Chip(label: Text('Needs $skill')),
-                ),
-                if (user.offerSkills.length + user.needSkills.length > 4)
-                  Chip(label: Text('+${user.offerSkills.length + user.needSkills.length - 4} more')),
-              ],
-            ),
+            const SizedBox(height: 16),
+            if (offerSkills.isNotEmpty)
+              _SkillSection(
+                title: 'Offering',
+                skills: offerSkills,
+                type: SkillChipType.offer,
+              ),
+            if (needSkills.isNotEmpty) ...<Widget>[
+              if (offerSkills.isNotEmpty) const SizedBox(height: 12),
+              _SkillSection(
+                title: 'Looking for',
+                skills: needSkills,
+                type: SkillChipType.need,
+              ),
+            ],
+            if (remaining > 0) ...<Widget>[
+              const SizedBox(height: 12),
+              SkillChip(
+                label: '+$remaining more',
+                type: SkillChipType.neutral,
+                icon: Icons.more_horiz,
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SkillSection extends StatelessWidget {
+  const _SkillSection({
+    required this.title,
+    required this.skills,
+    required this.type,
+  });
+
+  final String title;
+  final List<String> skills;
+  final SkillChipType type;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          title,
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+            letterSpacing: 0.2,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: skills
+              .map((String skill) => SkillChip(label: skill, type: type))
+              .toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _DashboardIntro extends StatelessWidget {
+  const _DashboardIntro({required this.source});
+
+  final RecommendationSource source;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isMatches = source == RecommendationSource.matches;
+    final String headline = isMatches
+        ? 'Matches for you'
+        : 'Browse the community';
+    final String subtitle = isMatches
+        ? 'Connect with people who complement your skills.'
+        : 'Add more skills to unlock tailored matches.';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          headline,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          subtitle,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SearchPanel extends StatelessWidget {
+  const _SearchPanel({required this.controller, required this.onClear});
+
+  final TextEditingController controller;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: 'Search people or skills',
+            hintText: 'Try “UX Research” or “React”',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: controller.text.isNotEmpty
+                ? IconButton(onPressed: onClear, icon: const Icon(Icons.close))
+                : null,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrowseBanner extends StatelessWidget {
+  const _BrowseBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.accentBlueLight,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFB9CEFB)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Icon(Icons.info_outline, color: AppColors.accentBlue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Showing browse results',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.accentBlue,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Add or update your skills to unlock personalised matches.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardLoading extends StatelessWidget {
+  const _DashboardLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const CircularProgressIndicator(color: AppColors.primary),
+          const SizedBox(height: 16),
+          Text(
+            'Getting your matches...',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -416,18 +724,52 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Center(
-      child: Padding(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 360),
         padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            ElevatedButton(
+            Icon(
+              Icons.warning_amber_rounded,
+              size: 36,
+              color: theme.colorScheme.error,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'We ran into a problem',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
               onPressed: onRetry,
-              child: const Text('Try again'),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try again'),
             ),
           ],
         ),
@@ -444,24 +786,62 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Center(
-      child: Padding(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 360),
         padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Text(
-              headline,
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
+            Container(
+              height: 48,
+              width: 48,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.people_outline,
+                color: AppColors.primary,
+                size: 26,
+              ),
             ),
             const SizedBox(height: 12),
-            const Text('Add a skill or search for people to start matching.'),
+            Text(
+              headline,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Add a skill or search for people to start matching.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 20),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: onRefresh,
-              child: const Text('Refresh'),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
             ),
           ],
         ),

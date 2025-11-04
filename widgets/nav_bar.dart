@@ -20,11 +20,11 @@ class _NavBarState extends State<NavBar> {
   @override
   void initState() {
     super.initState();
-    _pages = const <Widget>[
-      HomePage(),
-      _OffersPlaceHolder(),
-      MessagePage(),
-      _SettingsPlaceholder(),
+    _pages = <Widget>[
+      const HomePage(),
+      const _OffersPlaceHolder(),
+      const MessagePage(),
+      const _SettingsPlaceholder(),
     ];
     _selectedIndex = _normalizeIndex(widget.initialIndex);
   }
@@ -51,10 +51,7 @@ class _NavBarState extends State<NavBar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -64,22 +61,10 @@ class _NavBarState extends State<NavBar> {
             onTabChange: _handleTabChange,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             tabs: const <GButton>[
-              GButton(
-                icon: Icons.home,
-                text: 'Home',
-              ),
-              GButton(
-                icon: Icons.local_offer,
-                text: 'Offers',
-              ),
-              GButton(
-                icon: Icons.message,
-                text: 'Messages',
-              ),
-              GButton(
-                icon: Icons.settings,
-                text: 'Profile',
-              ),
+              GButton(icon: Icons.home, text: 'Home'),
+              GButton(icon: Icons.local_offer, text: 'Offers'),
+              GButton(icon: Icons.message, text: 'Messages'),
+              GButton(icon: Icons.settings, text: 'Profile'),
             ],
           ),
         ),
@@ -105,9 +90,11 @@ class _SettingsPlaceholder extends StatelessWidget {
     );
   }
 }
-class _OffersPlaceHolder extends StatelessWidget {
-  const _OffersPlaceHolder({super.key});
 
+class _OffersPlaceHolder extends StatelessWidget {
+  const _OffersPlaceHolder();
+
+  @override
   Widget build(BuildContext context) {
     return const Center(
       child: Padding(

@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,13 +10,10 @@ class ApiService {
     String login,
     String password,
   ) async {
-    final Map<String, dynamic> result = await _post(
-      '/login',
-      <String, dynamic>{
-        'login': login.trim(),
-        'password': password.trim(),
-      },
-    );
+    final Map<String, dynamic> result = await _post('/login', <String, dynamic>{
+      'login': login.trim(),
+      'password': password.trim(),
+    });
 
     final String? token = result['token']?.toString();
     if (token != null && token.isNotEmpty) {
@@ -49,25 +46,20 @@ class ApiService {
   ) async {
     final List<String> nameParts = name.trim().split(RegExp(r'\s+'));
     final String firstName = nameParts.isNotEmpty ? nameParts.first : '';
-    final String lastName =
-        nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+    final String lastName = nameParts.length > 1
+        ? nameParts.sublist(1).join(' ')
+        : '';
 
-    return _post(
-      '/register',
-      <String, dynamic>{
-        'firstName': firstName,
-        'lastName': lastName,
-        'login': email.trim(),
-        'password': password.trim(),
-      },
-    );
+    return _post('/register', <String, dynamic>{
+      'firstName': firstName,
+      'lastName': lastName,
+      'login': email.trim(),
+      'password': password.trim(),
+    });
   }
 
   static Future<Map<String, dynamic>> requestPasswordReset(String login) async {
-    return _post(
-      '/request-reset',
-      <String, dynamic>{'login': login.trim()},
-    );
+    return _post('/request-reset', <String, dynamic>{'login': login.trim()});
   }
 
   static Future<List<dynamic>> getSkills() async {
@@ -208,9 +200,7 @@ class ApiService {
     try {
       final http.Response response = await http.get(
         Uri.parse('$baseUrl/browseskills'),
-        headers: const <String, String>{
-          'Content-Type': 'application/json',
-        },
+        headers: const <String, String>{'Content-Type': 'application/json'},
       );
 
       _logResponse('GET /browseskills', response);
@@ -234,9 +224,7 @@ class ApiService {
     try {
       final http.Response response = await http.get(
         Uri.parse('$baseUrl/users'),
-        headers: const <String, String>{
-          'Content-Type': 'application/json',
-        },
+        headers: const <String, String>{'Content-Type': 'application/json'},
       );
 
       _logResponse('GET /users', response);

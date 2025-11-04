@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/api_service.dart';
+import '../theme/app_theme.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -85,144 +86,165 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Container(
-            width: 340,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const Icon(
-                    Icons.swap_horiz,
-                    color: Color(0xFF3A4DA3),
-                    size: 48,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'SkillSwap',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF3A4DA3),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Sign In',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.person_outline),
-                      labelText: 'Email or Username',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      labelText: 'Password',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3A4DA3),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      _BrandHeader(theme: theme),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Sign in to your account',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: AppColors.textSecondary,
                         ),
                       ),
-                      onPressed: isLoading ? null : handleLogin,
-                      child: Text(
-                        isLoading ? 'Logging in...' : 'Sign In',
-                        style: const TextStyle(fontSize: 16),
+                      const SizedBox(height: 24),
+                      TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          labelText: 'Email or username',
+                          prefixIcon: Icon(Icons.mail_outline),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/forgotpassword');
-                      },
-                      child: const Text(
-                        'Forgot password?',
-                        style: TextStyle(color: Color(0xFF3A4DA3)),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Password',
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
                       ),
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      const Text("Don't have an account? "),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/signup');
-                        },
-                        child: const Text(
-                          'Sign up',
-                          style: TextStyle(
-                            color: Color(0xFF3A4DA3),
-                            fontWeight: FontWeight.bold,
+                      const SizedBox(height: 20),
+                      Row(
+                        children: <Widget>[
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/forgotpassword');
+                            },
+                            child: const Text('Forgot password?'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : handleLogin,
+                          child: Text(isLoading ? 'Signing in...' : 'Sign In'),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Text(
+                            "Don't have an account?",
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          const SizedBox(width: 6),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/signup');
+                            },
+                            child: const Text('Create one'),
+                          ),
+                        ],
+                      ),
+                      if (message.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: 12),
+                        Text(
+                          message,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: message.toLowerCase().contains('success')
+                                ? AppColors.accentGreen
+                                : theme.colorScheme.error,
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  if (message.isNotEmpty)
-                    Text(
-                      message,
-                      style: TextStyle(
-                        color: message.contains('success')
-                            ? Colors.green
-                            : Colors.red,
-                      ),
-                    ),
-                ],
+                ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _BrandHeader extends StatelessWidget {
+  const _BrandHeader({required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Container(
+          height: 48,
+          width: 48,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(
+            Icons.swap_horiz,
+            color: AppColors.primary,
+            size: 28,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'SkillSwap',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Learn · Share · Grow',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
