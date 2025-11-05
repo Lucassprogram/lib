@@ -3,6 +3,7 @@ import 'package:google_nav_bar/google_nav_bar.dart';
 
 import '../screens/home_page.dart';
 import '../screens/message_page.dart';
+import '../screens/profile_page.dart';
 
 class NavBar extends StatefulWidget {
   const NavBar({super.key, this.initialIndex = 0});
@@ -24,7 +25,7 @@ class _NavBarState extends State<NavBar> {
       const HomePage(),
       const _OffersPlaceHolder(),
       const MessagePage(),
-      const _SettingsPlaceholder(),
+      const ProfilePage(),
     ];
     _selectedIndex = _normalizeIndex(widget.initialIndex);
   }
