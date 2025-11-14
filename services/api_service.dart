@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
+  static http.Client httpClient = http.Client();
   static const String baseUrl = 'https://poosd24.live/api';
 
   static Future<Map<String, dynamic>> login(
@@ -71,7 +72,7 @@ class ApiService {
     }
 
     try {
-      final http.Response response = await http.get(
+      final http.Response response = await httpClient.get(
         Uri.parse('$baseUrl/myskills'),
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -107,17 +108,14 @@ class ApiService {
     }
 
     try {
-      final http.Response response = await http.post(
+      final http.Response response = await httpClient.post(
         Uri.parse('$baseUrl/addskill'),
         headers: <String, String>{
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
         // Backend requires capitalized keys: SkillName and Type
-        body: jsonEncode(<String, String>{
-          'SkillName': skill,
-          'Type': type,
-        }),
+        body: jsonEncode(<String, String>{'SkillName': skill, 'Type': type}),
       );
 
       _logResponse('POST /addskill', response);
@@ -146,7 +144,7 @@ class ApiService {
 
     try {
       final String encoded = Uri.encodeComponent(skillName);
-      final http.Response response = await http.delete(
+      final http.Response response = await httpClient.delete(
         Uri.parse('$baseUrl/deleteskill/$encoded'),
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -179,7 +177,7 @@ class ApiService {
     }
 
     try {
-      final http.Response response = await http.get(
+      final http.Response response = await httpClient.get(
         Uri.parse('$baseUrl/matchskills'),
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -206,7 +204,7 @@ class ApiService {
 
   static Future<List<dynamic>> fetchBrowseSkills() async {
     try {
-      final http.Response response = await http.get(
+      final http.Response response = await httpClient.get(
         Uri.parse('$baseUrl/browseskills'),
         headers: const <String, String>{'Content-Type': 'application/json'},
       );
@@ -230,7 +228,7 @@ class ApiService {
 
   static Future<List<dynamic>> fetchUsers() async {
     try {
-      final http.Response response = await http.get(
+      final http.Response response = await httpClient.get(
         Uri.parse('$baseUrl/users'),
         headers: const <String, String>{'Content-Type': 'application/json'},
       );
@@ -258,7 +256,7 @@ class ApiService {
     final String token = prefs.getString('token') ?? '';
     if (token.isEmpty) return <Map<String, dynamic>>[];
     try {
-      http.Response response = await http.get(
+      http.Response response = await httpClient.get(
         Uri.parse('$baseUrl/conversations'),
         headers: <String, String>{
           'Authorization': 'Bearer $token',
@@ -267,7 +265,7 @@ class ApiService {
       );
       _logResponse('GET /conversations', response);
       if (response.statusCode == 404) {
-        response = await http.get(
+        response = await httpClient.get(
           Uri.parse('$baseUrl/messages/partners'),
           headers: <String, String>{
             'Authorization': 'Bearer $token',
@@ -281,13 +279,17 @@ class ApiService {
         if (decoded != null) {
           final dynamic list = decoded['conversations'] ?? decoded['partners'];
           if (list is List<dynamic>) {
-            return list.map<Map<String, dynamic>>((dynamic e) => _asMap(e)).toList();
+            return list
+                .map<Map<String, dynamic>>((dynamic e) => _asMap(e))
+                .toList();
           }
         }
         // Some APIs return arrays directly
         final dynamic alt = jsonDecode(response.body);
         if (alt is List) {
-          return alt.map<Map<String, dynamic>>((dynamic e) => _asMap(e)).toList();
+          return alt
+              .map<Map<String, dynamic>>((dynamic e) => _asMap(e))
+              .toList();
         }
       }
     } catch (e) {
@@ -296,14 +298,16 @@ class ApiService {
     return <Map<String, dynamic>>[];
   }
 
-  static Future<List<Map<String, dynamic>>> fetchMessages(int partnerId,
-      {int page = 1}) async {
+  static Future<List<Map<String, dynamic>>> fetchMessages(
+    int partnerId, {
+    int page = 1,
+  }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String token = prefs.getString('token') ?? '';
     if (token.isEmpty) return <Map<String, dynamic>>[];
     try {
       Uri uri = Uri.parse('$baseUrl/messages?partner=$partnerId&page=$page');
-      http.Response response = await http.get(
+      http.Response response = await httpClient.get(
         uri,
         headers: <String, String>{
           'Authorization': 'Bearer $token',
@@ -312,7 +316,7 @@ class ApiService {
       );
       _logResponse('GET /messages?partner', response);
       if (response.statusCode == 404) {
-        response = await http.get(
+        response = await httpClient.get(
           Uri.parse('$baseUrl/conversation/$partnerId?page=$page'),
           headers: <String, String>{
             'Authorization': 'Bearer $token',
@@ -326,12 +330,16 @@ class ApiService {
         if (decoded != null) {
           final dynamic list = decoded['messages'] ?? decoded['data'];
           if (list is List<dynamic>) {
-            return list.map<Map<String, dynamic>>((dynamic e) => _asMap(e)).toList();
+            return list
+                .map<Map<String, dynamic>>((dynamic e) => _asMap(e))
+                .toList();
           }
         }
         final dynamic alt = jsonDecode(response.body);
         if (alt is List) {
-          return alt.map<Map<String, dynamic>>((dynamic e) => _asMap(e)).toList();
+          return alt
+              .map<Map<String, dynamic>>((dynamic e) => _asMap(e))
+              .toList();
         }
       }
     } catch (e) {
@@ -345,7 +353,7 @@ class ApiService {
     final String token = prefs.getString('token') ?? '';
     if (token.isEmpty) return <Map<String, dynamic>>[];
     try {
-      final http.Response response = await http.get(
+      final http.Response response = await httpClient.get(
         Uri.parse('$baseUrl/messages'),
         headers: <String, String>{
           'Authorization': 'Bearer $token',
@@ -358,11 +366,15 @@ class ApiService {
         final Map<String, dynamic>? decoded = _decodeMap(response.body);
         final dynamic list = decoded != null ? decoded['messages'] : null;
         if (list is List<dynamic>) {
-          return list.map<Map<String, dynamic>>((dynamic e) => _asMap(e)).toList();
+          return list
+              .map<Map<String, dynamic>>((dynamic e) => _asMap(e))
+              .toList();
         }
         final dynamic alt = jsonDecode(response.body);
         if (alt is List) {
-          return alt.map<Map<String, dynamic>>((dynamic e) => _asMap(e)).toList();
+          return alt
+              .map<Map<String, dynamic>>((dynamic e) => _asMap(e))
+              .toList();
         }
       }
     } catch (e) {
@@ -381,7 +393,7 @@ class ApiService {
       return <String, dynamic>{'error': 'Missing authentication token'};
     }
     try {
-      http.Response response = await http.post(
+      http.Response response = await httpClient.post(
         Uri.parse('$baseUrl/messages'),
         headers: <String, String>{
           'Authorization': 'Bearer $token',
@@ -409,7 +421,7 @@ class ApiService {
     final String token = prefs.getString('token') ?? '';
     if (token.isEmpty) return false;
     try {
-      final http.Response response = await http.delete(
+      final http.Response response = await httpClient.delete(
         Uri.parse('$baseUrl/messages/$id'),
         headers: <String, String>{
           'Authorization': 'Bearer $token',
@@ -429,7 +441,7 @@ class ApiService {
     if (token.isEmpty || name.trim().isEmpty) return <Map<String, dynamic>>[];
     try {
       final String q = Uri.encodeComponent(name.trim());
-      final http.Response response = await http.get(
+      final http.Response response = await httpClient.get(
         Uri.parse('$baseUrl/users?name=$q'),
         headers: <String, String>{
           'Authorization': 'Bearer $token',
@@ -441,7 +453,9 @@ class ApiService {
         final Map<String, dynamic>? decoded = _decodeMap(response.body);
         final dynamic list = decoded != null ? decoded['users'] : null;
         if (list is List<dynamic>) {
-          return list.map<Map<String, dynamic>>((dynamic e) => _asMap(e)).toList();
+          return list
+              .map<Map<String, dynamic>>((dynamic e) => _asMap(e))
+              .toList();
         }
       }
     } catch (e) {
@@ -469,8 +483,11 @@ class ApiService {
     for (final dynamic raw in browse) {
       if (raw is! Map<String, dynamic>) continue;
       final Object? idValue = raw['UserId'] ?? raw['UserID'];
-      final int? userId = idValue is int ? idValue : int.tryParse(idValue?.toString() ?? '');
-      final String name = (raw['SkillName'] ?? raw['skill'] ?? raw['name'] ?? '').toString();
+      final int? userId = idValue is int
+          ? idValue
+          : int.tryParse(idValue?.toString() ?? '');
+      final String name =
+          (raw['SkillName'] ?? raw['skill'] ?? raw['name'] ?? '').toString();
       if (name.isEmpty) continue;
       allNames.add(name);
       if (userId == -1) {
@@ -502,7 +519,7 @@ class ApiService {
 
     try {
       // 1) Primary: align with web app endpoint
-      http.Response response = await http.post(
+      http.Response response = await httpClient.post(
         Uri.parse('$baseUrl/update-name'),
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -516,7 +533,7 @@ class ApiService {
       if (response.statusCode == 404) {
         final String userId = prefs.getString('userId') ?? '';
         if (userId.isNotEmpty) {
-          response = await http.put(
+          response = await httpClient.put(
             Uri.parse('$baseUrl/user/$userId'),
             headers: <String, String>{
               'Content-Type': 'application/json',
@@ -561,7 +578,8 @@ class ApiService {
         };
       }
 
-      String message = 'Unexpected response from server (${response.statusCode})';
+      String message =
+          'Unexpected response from server (${response.statusCode})';
       if (contentType.contains('application/json')) {
         final Map<String, dynamic>? decoded = _decodeMap(response.body);
         if (decoded != null && decoded['error'] != null) {
@@ -580,7 +598,7 @@ class ApiService {
     final String userId = prefs.getString('userId') ?? '';
     if (token.isEmpty || userId.isEmpty) return null;
     try {
-      final http.Response response = await http.get(
+      final http.Response response = await httpClient.get(
         Uri.parse('$baseUrl/user/$userId'),
         headers: <String, String>{
           'Authorization': 'Bearer $token',
@@ -602,7 +620,7 @@ class ApiService {
     Map<String, dynamic> body,
   ) async {
     try {
-      final http.Response response = await http.post(
+      final http.Response response = await httpClient.post(
         Uri.parse('$baseUrl$endpoint'),
         headers: <String, String>{'Content-Type': 'application/json'},
         body: jsonEncode(body),

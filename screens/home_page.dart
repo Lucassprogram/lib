@@ -193,16 +193,40 @@ class _HomePageState extends State<HomePage> {
       if (userId == null || userId == currentUser) {
         continue;
       }
+
       final List<dynamic>? skillList = raw['skills'] as List<dynamic>?;
-      final List<String> skills = skillList == null
-          ? <String>[]
-          : skillList.map((dynamic item) => item.toString()).toSet().toList();
+      final List<String> offerSkills = <String>[];
+      final List<String> needSkills = <String>[];
+
+      if (skillList != null) {
+        for (final dynamic item in skillList) {
+          String? name;
+          String type = 'offer';
+
+          if (item is Map<String, dynamic>) {
+            name = item['SkillName']?.toString().trim();
+            type = item['Type']?.toString().toLowerCase() ?? 'offer';
+          } else {
+            name = item?.toString().trim();
+          }
+
+          if (name == null || name.isEmpty) {
+            continue;
+          }
+
+          final List<String> bucket = type == 'need' ? needSkills : offerSkills;
+          if (!bucket.contains(name)) {
+            bucket.add(name);
+          }
+        }
+      }
+
       users.add(
         RecommendedUser(
           userId: userId,
           displayName: 'User $userId',
-          offerSkills: skills,
-          needSkills: const <String>[],
+          offerSkills: offerSkills,
+          needSkills: needSkills,
         ),
       );
     }
@@ -486,7 +510,9 @@ class _RecommendationCard extends StatelessWidget {
                   ),
                 ),
                 OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.of(context).pushNamed('/messages');
+                  },
                   icon: const Icon(Icons.send, size: 18),
                   label: const Text('Message'),
                 ),

@@ -3,6 +3,7 @@ import 'package:google_nav_bar/google_nav_bar.dart';
 
 import '../screens/home_page.dart';
 import '../screens/message_page.dart';
+import '../screens/offers_page.dart';
 import '../screens/profile_page.dart';
 
 class NavBar extends StatefulWidget {
@@ -23,7 +24,7 @@ class _NavBarState extends State<NavBar> {
     super.initState();
     _pages = <Widget>[
       const HomePage(),
-      const _OffersPlaceHolder(),
+      const OffersPage(),
       const MessagePage(),
       const ProfilePage(),
     ];
@@ -68,42 +69,6 @@ class _NavBarState extends State<NavBar> {
               GButton(icon: Icons.settings, text: 'Profile'),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsPlaceholder extends StatelessWidget {
-  const _SettingsPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text(
-          'Profile coming soon!',
-          style: TextStyle(fontSize: 18, color: Colors.grey),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-}
-
-class _OffersPlaceHolder extends StatelessWidget {
-  const _OffersPlaceHolder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text(
-          'Offers coming soon!',
-          style: TextStyle(fontSize: 18, color: Colors.grey),
-          textAlign: TextAlign.center,
         ),
       ),
     );

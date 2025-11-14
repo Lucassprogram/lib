@@ -162,14 +162,16 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 6,
+                        runSpacing: 4,
                         children: <Widget>[
                           Text(
                             "Don't have an account?",
                             style: theme.textTheme.bodyMedium,
                           ),
-                          const SizedBox(width: 6),
                           TextButton(
                             onPressed: () {
                               Navigator.pushNamed(context, '/signup');

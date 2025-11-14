@@ -13,9 +13,11 @@ class MessagePage extends StatefulWidget {
 }
 
 class _MessagePageState extends State<MessagePage> {
+  static const double _compactWidthBreakpoint = 840;
   final TextEditingController _search = TextEditingController();
   final TextEditingController _composer = TextEditingController();
   final ScrollController _messageScroll = ScrollController();
+  bool _showListOnCompact = true;
 
   List<Map<String, dynamic>> _conversations = <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _messages = <Map<String, dynamic>>[];
@@ -49,19 +51,23 @@ class _MessagePageState extends State<MessagePage> {
       if (from == null || to == null) continue;
       final int partner = from == _selfId ? to : (to == _selfId ? from : to);
       final String body = m['body']?.toString() ?? m['text']?.toString() ?? '';
-      final String created = m['createdAt']?.toString() ?? m['created']?.toString() ?? '';
+      final String created =
+          m['createdAt']?.toString() ?? m['created']?.toString() ?? '';
       final String name = from == partner
           ? (m['fromName']?.toString() ?? '')
           : (m['toName']?.toString() ?? '');
-      final Map<String, dynamic> prev = conv[partner] ?? <String, dynamic>{
-        'partnerId': partner,
-        'partnerName': name,
-        'lastMessage': body,
-        'lastAt': created,
-      };
+      final Map<String, dynamic> prev =
+          conv[partner] ??
+          <String, dynamic>{
+            'partnerId': partner,
+            'partnerName': name,
+            'lastMessage': body,
+            'lastAt': created,
+          };
       // Update if newer
       if (((prev['lastAt']?.toString() ?? '')).compareTo(created) <= 0) {
-        prev['partnerName'] = (prev['partnerName']?.toString().isNotEmpty ?? false)
+        prev['partnerName'] =
+            (prev['partnerName']?.toString().isNotEmpty ?? false)
             ? prev['partnerName']
             : name;
         prev['lastMessage'] = body;
@@ -70,8 +76,12 @@ class _MessagePageState extends State<MessagePage> {
       conv[partner] = prev;
     }
     final List<Map<String, dynamic>> rows = conv.values.toList()
-      ..sort((Map<String, dynamic> a, Map<String, dynamic> b) =>
-          (b['lastAt']?.toString() ?? '').compareTo(a['lastAt']?.toString() ?? ''));
+      ..sort(
+        (Map<String, dynamic> a, Map<String, dynamic> b) =>
+            (b['lastAt']?.toString() ?? '').compareTo(
+              a['lastAt']?.toString() ?? '',
+            ),
+      );
 
     setState(() {
       _allMessages = msgs;
@@ -81,19 +91,28 @@ class _MessagePageState extends State<MessagePage> {
   }
 
   Future<void> _openConversation(int partnerId, String fallbackName) async {
+    final bool isCompact =
+        MediaQuery.of(context).size.width < _compactWidthBreakpoint;
     setState(() {
       _selectedPartnerId = partnerId;
       _selectedPartnerName = fallbackName;
       _messages.clear();
       _loadingMessages = true;
+      if (isCompact) {
+        _showListOnCompact = false;
+      }
     });
-    final List<Map<String, dynamic>> rows = _allMessages.where((Map<String, dynamic> m) {
-      final int? from = _toInt(m['from'] ?? m['From']);
-      final int? to = _toInt(m['to'] ?? m['To']);
-      return from == partnerId || to == partnerId;
-    }).toList()
-      ..sort((Map<String, dynamic> a, Map<String, dynamic> b) =>
-          (a['createdAt']?.toString() ?? '').compareTo(b['createdAt']?.toString() ?? ''));
+    final List<Map<String, dynamic>> rows =
+        _allMessages.where((Map<String, dynamic> m) {
+          final int? from = _toInt(m['from'] ?? m['From']);
+          final int? to = _toInt(m['to'] ?? m['To']);
+          return from == partnerId || to == partnerId;
+        }).toList()..sort(
+          (Map<String, dynamic> a, Map<String, dynamic> b) =>
+              (a['createdAt']?.toString() ?? '').compareTo(
+                b['createdAt']?.toString() ?? '',
+              ),
+        );
     setState(() {
       _messages = rows;
       _loadingMessages = false;
@@ -109,12 +128,15 @@ class _MessagePageState extends State<MessagePage> {
     final int? partnerId = _selectedPartnerId;
     if (text.isEmpty || partnerId == null) return;
     _composer.clear();
-    final Map<String, dynamic> res =
-        await ApiService.sendMessage(to: partnerId, body: text);
+    final Map<String, dynamic> res = await ApiService.sendMessage(
+      to: partnerId,
+      body: text,
+    );
     if (res['error'] != null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Send failed: ${res['error']}')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Send failed: ${res['error']}')));
       return;
     }
     // Optimistic update: append the message locally so it appears immediately.
@@ -131,9 +153,12 @@ class _MessagePageState extends State<MessagePage> {
 
       // Update conversations preview and order
       final int idx = _conversations.indexWhere(
-          (Map<String, dynamic> row) => _idForConversation(row) == partnerId);
+        (Map<String, dynamic> row) => _idForConversation(row) == partnerId,
+      );
       if (idx >= 0) {
-        final Map<String, dynamic> row = Map<String, dynamic>.from(_conversations[idx]);
+        final Map<String, dynamic> row = Map<String, dynamic>.from(
+          _conversations[idx],
+        );
         row['lastMessage'] = text;
         row['lastAt'] = nowIso;
         if ((row['partnerName']?.toString().isEmpty ?? true) &&
@@ -149,8 +174,12 @@ class _MessagePageState extends State<MessagePage> {
           'lastAt': nowIso,
         });
       }
-      _conversations.sort((Map<String, dynamic> a, Map<String, dynamic> b) =>
-          (b['lastAt']?.toString() ?? '').compareTo(a['lastAt']?.toString() ?? ''));
+      _conversations.sort(
+        (Map<String, dynamic> a, Map<String, dynamic> b) =>
+            (b['lastAt']?.toString() ?? '').compareTo(
+              a['lastAt']?.toString() ?? '',
+            ),
+      );
     });
 
     // Scroll to bottom so the new message is visible.
@@ -170,17 +199,17 @@ class _MessagePageState extends State<MessagePage> {
     if (q.isEmpty) return _conversations;
     return _conversations.where((Map<String, dynamic> row) {
       final String name = _nameForConversation(row).toLowerCase();
-      final String preview = (row['lastMessage']?.toString() ??
-              row['preview']?.toString() ??
-              '')
-          .toLowerCase();
+      final String preview =
+          (row['lastMessage']?.toString() ?? row['preview']?.toString() ?? '')
+              .toLowerCase();
       return name.contains(q) || preview.contains(q);
     }).toList();
   }
 
   String _nameForConversation(Map<String, dynamic> row) {
     // Flexible: try common field names
-    final String viaName = row['partnerName']?.toString() ??
+    final String viaName =
+        row['partnerName']?.toString() ??
         row['name']?.toString() ??
         row['displayName']?.toString() ??
         '';
@@ -206,182 +235,244 @@ class _MessagePageState extends State<MessagePage> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final double width = MediaQuery.of(context).size.width;
+    final bool isCompact = width < _compactWidthBreakpoint;
+
+    if (!isCompact && !_showListOnCompact) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_showListOnCompact) {
+          setState(() {
+            _showListOnCompact = true;
+          });
+        }
+      });
+    }
+
+    final bool showListPane =
+        !isCompact || _showListOnCompact || _selectedPartnerId == null;
+    final String appBarTitle =
+        !isCompact || showListPane || _selectedPartnerId == null
+        ? 'Messages'
+        : (_selectedPartnerName.isEmpty
+              ? 'User ${_selectedPartnerId ?? ''}'
+              : _selectedPartnerName);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Messages')),
-      body: Row(
-        children: <Widget>[
-          // Conversations list
-          SizedBox(
-            width: 320,
-            child: Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _openUserPicker(context),
-                          icon: const Icon(Icons.person_search),
-                          label: const Text('New message'),
-                        ),
+      appBar: AppBar(
+        title: Text(appBarTitle),
+        leading: isCompact && !showListPane && _selectedPartnerId != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  setState(() {
+                    _showListOnCompact = true;
+                  });
+                },
+              )
+            : null,
+      ),
+      body: SafeArea(
+        child: isCompact
+            ? AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: showListPane
+                    ? KeyedSubtree(
+                        key: ValueKey('list'),
+                        child: _buildConversationList(),
+                      )
+                    : KeyedSubtree(
+                        key: const ValueKey('pane'),
+                        child: _buildConversationPane(theme: theme),
                       ),
-                    ],
-                  ),
+              )
+            : Row(
+                children: <Widget>[
+                  SizedBox(width: 320, child: _buildConversationList()),
+                  const VerticalDivider(width: 1),
+                  Expanded(child: _buildConversationPane(theme: theme)),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildConversationList() {
+    return Column(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _openUserPicker(context),
+                  icon: const Icon(Icons.person_search),
+                  label: const Text('New message'),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                  child: TextField(
-                    controller: _search,
-                    decoration: const InputDecoration(
-                      hintText: 'Search conversations',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-                Expanded(
-                  child: _loadingConversations
-                      ? const Center(child: CircularProgressIndicator())
-                      : _filteredConversations.isEmpty
-                          ? const _EmptyList()
-                          : ListView.builder(
-                              itemCount: _filteredConversations.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                final Map<String, dynamic> row =
-                                    _filteredConversations[index];
-                                final String name = _nameForConversation(row);
-                                final int? partnerId = _idForConversation(row);
-                                final String preview =
-                                    row['lastMessage']?.toString() ??
-                                        row['preview']?.toString() ??
-                                        '';
-                                final bool selected =
-                                    partnerId != null && partnerId == _selectedPartnerId;
-                                return ListTile(
-                                  selected: selected,
-                                  title: Text(name,
-                                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                                  subtitle: preview.isEmpty ? null : Text(
-                                    preview,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  onTap: partnerId == null
-                                      ? null
-                                      : () => _openConversation(partnerId, name),
-                                );
-                              },
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          child: TextField(
+            controller: _search,
+            decoration: const InputDecoration(
+              hintText: 'Search conversations',
+              prefixIcon: Icon(Icons.search),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+        ),
+        Expanded(
+          child: _loadingConversations
+              ? const Center(child: CircularProgressIndicator())
+              : _filteredConversations.isEmpty
+              ? const _EmptyList()
+              : ListView.builder(
+                  itemCount: _filteredConversations.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final Map<String, dynamic> row =
+                        _filteredConversations[index];
+                    final String name = _nameForConversation(row);
+                    final int? partnerId = _idForConversation(row);
+                    final String preview =
+                        row['lastMessage']?.toString() ??
+                        row['preview']?.toString() ??
+                        '';
+                    final bool selected =
+                        partnerId != null && partnerId == _selectedPartnerId;
+                    return ListTile(
+                      selected: selected,
+                      title: Text(
+                        name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: preview.isEmpty
+                          ? null
+                          : Text(
+                              preview,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
+                      onTap: partnerId == null
+                          ? null
+                          : () => _openConversation(partnerId, name),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConversationPane({required ThemeData theme}) {
+    if (_selectedPartnerId == null) {
+      return const _EmptyChat();
+    }
+    return Column(
+      children: <Widget>[
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border(bottom: BorderSide(color: AppColors.border)),
+          ),
+          child: Row(
+            children: <Widget>[
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                child: const Icon(Icons.person, color: AppColors.primary),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _selectedPartnerName.isEmpty
+                      ? 'User ${_selectedPartnerId ?? ''}'
+                      : _selectedPartnerName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _loadingMessages
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.builder(
+                  controller: _messageScroll,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: _messages.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final Map<String, dynamic> m = _messages[index];
+                    final Object? fromVal =
+                        m['from'] ?? m['senderId'] ?? m['From'];
+                    final int? from = fromVal is int
+                        ? fromVal
+                        : int.tryParse(fromVal?.toString() ?? '');
+                    final bool mine = from == _selfId;
+                    final String text =
+                        m['text']?.toString() ??
+                        m['message']?.toString() ??
+                        m['body']?.toString() ??
+                        '';
+                    return Align(
+                      alignment: mine
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        decoration: BoxDecoration(
+                          color: mine
+                              ? AppColors.primary.withValues(alpha: 0.1)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Text(text),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: TextField(
+                    controller: _composer,
+                    minLines: 1,
+                    maxLines: 5,
+                    decoration: const InputDecoration(
+                      hintText: 'Type a message...',
+                    ),
+                    onSubmitted: (_) => _send(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _send,
+                  icon: const Icon(Icons.send),
+                  color: AppColors.primary,
+                  tooltip: 'Send',
                 ),
               ],
             ),
           ),
-          const VerticalDivider(width: 1),
-          // Conversation pane
-          Expanded(
-            child: _selectedPartnerId == null
-                ? const _EmptyChat()
-                : Column(
-                    children: <Widget>[
-                      Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          border: Border(bottom: BorderSide(color: AppColors.border)),
-                        ),
-                        child: Row(
-                          children: <Widget>[
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                              child: const Icon(Icons.person, color: AppColors.primary),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _selectedPartnerName.isEmpty
-                                  ? 'User ${_selectedPartnerId}'
-                                  : _selectedPartnerName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: _loadingMessages
-                            ? const Center(child: CircularProgressIndicator())
-                            : ListView.builder(
-                                controller: _messageScroll,
-                                padding: const EdgeInsets.all(12),
-                                itemCount: _messages.length,
-                                itemBuilder: (BuildContext context, int index) {
-                                  final Map<String, dynamic> m = _messages[index];
-                                  final Object? fromVal = m['from'] ?? m['senderId'] ?? m['From'];
-                                  final int? from = fromVal is int
-                                      ? fromVal
-                                      : int.tryParse(fromVal?.toString() ?? '');
-                                  final bool mine = from == _selfId;
-                                  final String text = m['text']?.toString() ??
-                                      m['message']?.toString() ??
-                                      m['body']?.toString() ?? '';
-                                  return Align(
-                                    alignment:
-                                        mine ? Alignment.centerRight : Alignment.centerLeft,
-                                    child: Container(
-                                      margin: const EdgeInsets.symmetric(vertical: 4),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 12, vertical: 8),
-                                      constraints: const BoxConstraints(maxWidth: 520),
-                                      decoration: BoxDecoration(
-                                        color: mine
-                                            ? AppColors.primary.withValues(alpha: 0.1)
-                                            : Colors.white,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: AppColors.border),
-                                      ),
-                                      child: Text(text),
-                                    ),
-                                  );
-                                },
-                              ),
-                      ),
-                      SafeArea(
-                        top: false,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: TextField(
-                                  controller: _composer,
-                                  minLines: 1,
-                                  maxLines: 5,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Type a message...',
-                                  ),
-                                  onSubmitted: (_) => _send(),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                onPressed: _send,
-                                icon: const Icon(Icons.send),
-                                color: AppColors.primary,
-                                tooltip: 'Send',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -390,9 +481,14 @@ class _MessagePageState extends State<MessagePage> {
       context: context,
       builder: (BuildContext context) => const UserSearchDialog(),
     );
-    if (picked == null) return;
-    final int? id = _toInt(picked['UserID'] ?? picked['userId'] ?? picked['id']);
-    final String name = '${picked['FirstName'] ?? ''} ${picked['LastName'] ?? ''}'.trim();
+    if (picked == null) {
+      return;
+    }
+    final int? id = _toInt(
+      picked['UserID'] ?? picked['userId'] ?? picked['id'],
+    );
+    final String name =
+        '${picked['FirstName'] ?? ''} ${picked['LastName'] ?? ''}'.trim();
     if (id != null) {
       await _openConversation(id, name);
     }
@@ -407,7 +503,9 @@ class _EmptyList extends StatelessWidget {
     return Center(
       child: Text(
         'No conversations yet',
-        style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: AppColors.textSecondary,
+        ),
       ),
     );
   }
@@ -421,7 +519,9 @@ class _EmptyChat extends StatelessWidget {
     return Center(
       child: Text(
         'Select a conversation to start chatting',
-        style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: AppColors.textSecondary,
+        ),
       ),
     );
   }
